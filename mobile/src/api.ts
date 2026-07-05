@@ -1,8 +1,14 @@
 // API base URL.
-// In dev, the Android emulator reaches the host via 10.0.2.2; iOS sim uses localhost.
-// For a physical device, replace with your machine's LAN IP.
+// On iOS Simulator the host machine is reachable as `localhost`.
+// On Android Emulator the host is `10.0.2.2` (special alias from Android).
+// For a physical device, pass `EXPO_PUBLIC_API_URL=http://<your-mac-LAN-ip>:3000`.
+import { Platform } from "react-native";
+
+const DEFAULT_API_URL =
+  Platform.OS === "ios" ? "http://localhost:3000" : "http://10.0.2.2:3000";
+
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3000";
+  process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL;
 
 export type Note = {
   id: string;
