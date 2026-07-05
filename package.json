@@ -1,0 +1,19 @@
+{
+  "name": "studyhub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted study notes app (web + mobile).",
+  "scripts": {
+    "web:dev": "cd web && pnpm dev",
+    "web:build": "cd web && pnpm build",
+    "web:start": "cd web && pnpm start",
+    "web:db:push": "cd web && pnpm db:push",
+    "web:db:generate": "cd web && pnpm db:generate",
+    "web:db:studio": "cd web && pnpm db:studio",
+    "mobile:start": "cd mobile && npm start",
+    "mobile:android": "cd mobile && npm run android",
+    "mobile:ios": "cd mobile && npm run ios",
+    "docker:up": "cd web && docker compose up --build",
+    "docker:down": "cd web && docker compose down -v"
+  }
+}

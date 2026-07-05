@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Expo
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Misc
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*~
+.cache/
+
+# Docker
+postgres-data/

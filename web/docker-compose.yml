@@ -1,0 +1,41 @@
+# ─── docker-compose for local dev (also a reference for Dokploy) ────
+# Use:
+#   docker compose up --build
+# Then visit http://localhost:3000
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: studyhub
+      POSTGRES_PASSWORD: studyhub
+      POSTGRES_DB: studyhub
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studyhub -d studyhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://studyhub:studyhub@postgres:5432/studyhub?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-with-openssl-rand-base64-32}
+      NEXT_PUBLIC_APP_NAME: StudyHub
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:

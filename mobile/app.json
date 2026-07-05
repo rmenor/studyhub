@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "StudyHub",
+    "slug": "studyhub",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.studyhub.app"
+    },
+    "android": {
+      "package": "com.studyhub.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0c0a09",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiBaseUrl": "http://10.0.2.2:3000"
+    }
+  }
+}

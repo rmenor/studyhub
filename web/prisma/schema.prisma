@@ -1,0 +1,132 @@
+// StudyHub — Prisma schema
+// Generador + datasource
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth.js v5 required models ──────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+
+  accounts Account[]
+  sessions Session[]
+  notes    Note[]
+  folders  Folder[]
+  tags     Tag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── StudyHub domain models ──────────────────────────────────────────
+
+model Folder {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String?
+  parent   Folder? @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderHierarchy")
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes  Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Note {
+  id       String  @id @default(cuid())
+  title    String
+  content  String  @db.Text
+  folderId String?
+  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags   NoteTag[]
+
+  pinned   Boolean   @default(false)
+  archived Boolean   @default(false)
+  
+  // Filled by Postgres trigger / generated column (migration SQL).
+  // See prisma/migrations/*_fts/migration.sql
+  // searchVector Unsupported("tsvector")?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([userId, pinned, updatedAt(sort: Desc)])
+  @@index([folderId])
+}
+
+model Tag {
+  id     String    @id @default(cuid())
+  name   String
+  userId String
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes  NoteTag[]
+
+  @@unique([userId, name])
+}
+
+model NoteTag {
+  noteId String
+  tagId  String
+  note   Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, tagId])
+  @@index([tagId])
+}
