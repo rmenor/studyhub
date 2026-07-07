@@ -11,8 +11,10 @@ export const metadata: Metadata = {
   description: "Tus notas de estudio, en la web y en el móvil.",
 };
 
-// Runs before the first paint: reads the saved preference (or the OS default),
-// and applies `.dark` on <html> so we don't get a flash of the wrong theme.
+// Runs before any React hydration: reads the saved preference (or the OS
+// default), and applies `.dark` on <html> so we don't get a flash of the
+// wrong theme. Kept as a plain inline script (not a React component child)
+// so React doesn't try to "re-render" it on the client.
 const themeScript = `
 (function () {
   try {
@@ -29,10 +31,8 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <Providers>{children}</Providers>
       </body>
     </html>

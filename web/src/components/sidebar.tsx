@@ -153,6 +153,10 @@ export function Sidebar({ folders, tags }: Props) {
           />
         </Section>
 
+        <Section title="Ajustes">
+          <SidebarLink href="/settings/keys" label="🔑  Claves de API" active={false} />
+        </Section>
+
         <Section
           title="Carpetas"
           action={

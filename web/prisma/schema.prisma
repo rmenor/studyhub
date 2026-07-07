@@ -25,6 +25,7 @@ model User {
   notes    Note[]
   folders  Folder[]
   tags     Tag[]
+  apiKeys  ApiKey[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,4 +130,25 @@ model NoteTag {
 
   @@id([noteId, tagId])
   @@index([tagId])
+}
+
+// ─── API keys for external integrations (AI assistants, scripts, …) ────
+// The plaintext key is only ever shown to the user at creation time.
+// We store only a sha256 hash + a short prefix for display in the UI.
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  prefix     String    // first 12 chars of the key, used for display
+  keyHash    String    @unique // sha256 of the plaintext key
+  scopes     String    @default("notes:write") // comma-separated
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
