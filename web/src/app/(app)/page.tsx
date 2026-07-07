@@ -96,7 +96,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
   const headerLabel = deriveHeaderLabel(activeFolderName, tagName ?? null, view);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-6">
+    <div className="mx-auto max-w-3xl px-6 py-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-semibold">{headerLabel}</h1>
