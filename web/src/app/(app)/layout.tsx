@@ -4,6 +4,7 @@ import { Sidebar, type SidebarFolder, type SidebarTag } from "@/components/sideb
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -49,6 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="shrink-0 border-b border-[var(--border)] bg-[var(--background)]">
         <div className="flex h-12 items-center gap-4 px-4">
           <nav className="ml-auto flex items-center gap-3 text-sm">
+            <ThemeToggle />
             <span className="text-[var(--muted-foreground)] hidden sm:inline">
               {session.user.email}
             </span>

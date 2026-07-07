@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Markdown } from "@/components/markdown";
 
 type Folder = { id: string; name: string };
 type TagSuggestion = { id: string; name: string; noteCount: number };
 
+type Mode = "edit" | "preview" | "split";
+
 export function NoteEditor({
   initial,
   folders,
+  onCancel,
+  onSaved,
 }: {
   initial?: {
     id?: string;
@@ -19,6 +24,8 @@ export function NoteEditor({
     tagNames?: string[];
   };
   folders: Folder[];
+  onCancel?: () => void;
+  onSaved?: (id: string) => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -30,9 +37,9 @@ export function NoteEditor({
   const [pinned, setPinned] = useState(initial?.pinned ?? false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>("edit");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch tag suggestions once for the autocomplete dropdown.
   useEffect(() => {
     let cancelled = false;
     fetch("/api/tags")
@@ -75,7 +82,7 @@ export function NoteEditor({
 
   async function save() {
     setError(null);
-    if (tagDraft.trim()) addTag(tagDraft); // commit any pending chip
+    if (tagDraft.trim()) addTag(tagDraft);
 
     const payload = {
       title: title.trim(),
@@ -107,18 +114,31 @@ export function NoteEditor({
     }
 
     const data = await res.json();
-    startTransition(() => {
-      router.replace(`/notes/${data.note.id}`);
-      router.refresh();
-    });
+    const savedId = data.note.id as string;
+
+    if (onSaved) {
+      onSaved(savedId);
+    } else {
+      startTransition(() => {
+        router.replace(`/notes/${savedId}`);
+        router.refresh();
+      });
+    }
   }
+
+  function handleCancel() {
+    if (onCancel) onCancel();
+    else router.back();
+  }
+
+  const wordCount = useMemo(() => content.trim().split(/\s+/).filter(Boolean).length, [content]);
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={handleCancel}
           className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
         >
           ← Volver
@@ -214,15 +234,82 @@ export function NoteEditor({
         </div>
       </div>
 
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Escribe tu nota…"
-        rows={20}
-        className="w-full px-4 py-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--accent)] font-mono"
-      />
+      <div className="flex items-center justify-between mb-2">
+        <div className="inline-flex rounded-md border border-[var(--border)] overflow-hidden text-xs">
+          <ModeButton current={mode} value="edit" onClick={setMode}>Escribir</ModeButton>
+          <ModeButton current={mode} value="split" onClick={setMode}>Dividido</ModeButton>
+          <ModeButton current={mode} value="preview" onClick={setMode}>Vista previa</ModeButton>
+        </div>
+        <span className="text-[11px] text-[var(--muted-foreground)]">
+          Markdown · {wordCount} {wordCount === 1 ? "palabra" : "palabras"}
+        </span>
+      </div>
+
+      <div className={mode === "split" ? "grid grid-cols-2 gap-3" : ""}>
+        {(mode === "edit" || mode === "split") && (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={`Escribe en Markdown…
+
+# Encabezado
+**negrita**, *cursiva*, [enlace](https://…)
+
+- lista
+- con items
+
+\`\`\`
+bloque de código
+\`\`\``}
+            rows={mode === "split" ? 18 : 20}
+            className="w-full px-4 py-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-[var(--accent)] font-mono"
+          />
+        )}
+        {(mode === "preview" || mode === "split") && (
+          <div
+            className={`rounded-md border border-[var(--border)] bg-[var(--background)] p-4 overflow-auto ${
+              mode === "preview" ? "min-h-[420px]" : "min-h-[18rem]"
+            }`}
+          >
+            {content.trim() ? (
+              <Markdown>{content}</Markdown>
+            ) : (
+              <p className="text-[var(--muted-foreground)] italic text-sm">
+                La vista previa aparecerá aquí.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
     </div>
+  );
+}
+
+function ModeButton({
+  current,
+  value,
+  onClick,
+  children,
+}: {
+  current: Mode;
+  value: Mode;
+  onClick: (m: Mode) => void;
+  children: React.ReactNode;
+}) {
+  const active = current === value;
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(value)}
+      className={`px-3 py-1.5 ${
+        active
+          ? "bg-[var(--accent)] text-white"
+          : "bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--muted-foreground)]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

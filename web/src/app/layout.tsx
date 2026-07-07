@@ -11,11 +11,27 @@ export const metadata: Metadata = {
   description: "Tus notas de estudio, en la web y en el móvil.",
 };
 
+// Runs before the first paint: reads the saved preference (or the OS default),
+// and applies `.dark` on <html> so we don't get a flash of the wrong theme.
+const themeScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem('studyhub.theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var theme = stored || (prefersDark ? 'dark' : 'light');
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="es" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>

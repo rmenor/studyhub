@@ -1,9 +1,9 @@
-import { NoteEditor } from "@/components/note-editor";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import { NoteView } from "@/components/note-view";
 
-export const metadata = { title: "Editar nota · StudyHub" };
+export const metadata = { title: "Nota · StudyHub" };
 
 type Params = Promise<{ id: string }>;
 
@@ -31,16 +31,20 @@ export default async function NotePage({ params }: { params: Params }) {
   if (!note) notFound();
 
   return (
-    <NoteEditor
-      folders={folders}
-      initial={{
+    <NoteView
+      note={{
         id: note.id,
         title: note.title,
         content: note.content,
         folderId: note.folderId,
         pinned: note.pinned,
-        tagNames: note.tags.map((t) => t.tag.name),
+        archived: note.archived,
+        createdAt: note.createdAt.toISOString(),
+        updatedAt: note.updatedAt.toISOString(),
+        folder: note.folder,
+        tags: note.tags,
       }}
+      folders={folders}
     />
   );
 }
