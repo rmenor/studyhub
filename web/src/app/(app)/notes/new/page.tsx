@@ -1,6 +1,6 @@
+import { NoteEditor } from "@/components/note-editor";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { NoteEditor } from "@/components/note-editor";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Nueva nota · StudyHub" };

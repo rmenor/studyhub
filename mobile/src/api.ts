@@ -22,7 +22,24 @@ export type Note = {
   updatedAt: string;
 };
 
-export type Folder = { id: string; name: string };
+export type Folder = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  _count?: { notes: number; children: number };
+};
+
+export type Tag = {
+  id: string;
+  name: string;
+  noteCount: number;
+};
+
+export type ListNotesOpts = {
+  q?: string;
+  folderId?: string;
+  tag?: string;
+};
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -79,9 +96,14 @@ export const api = {
       },
     ),
 
-  listNotes: (token: string, q?: string) => {
+  listNotes: (token: string, opts: ListNotesOpts | string = {}) => {
+    // Back-compat: accept a plain string (legacy `q`) as well.
+    const o: ListNotesOpts =
+      typeof opts === "string" ? { q: opts } : opts;
     const params = new URLSearchParams();
-    if (q) params.set("q", q);
+    if (o.q) params.set("q", o.q);
+    if (o.folderId) params.set("folderId", o.folderId);
+    if (o.tag) params.set("tag", o.tag);
     const qs = params.toString();
     return request<{ notes: Note[] }>(`/api/notes${qs ? `?${qs}` : ""}`, {
       token,
@@ -90,7 +112,13 @@ export const api = {
 
   createNote: (
     token: string,
-    payload: { title: string; content: string; tagNames?: string[] },
+    payload: {
+      title: string;
+      content: string;
+      tagNames?: string[];
+      folderId?: string | null;
+      pinned?: boolean;
+    },
   ) =>
     request<{ note: Note }>("/api/notes", {
       method: "POST",
@@ -98,6 +126,39 @@ export const api = {
       token,
     }),
 
+  updateNote: (
+    token: string,
+    id: string,
+    payload: {
+      title?: string;
+      content?: string;
+      tagNames?: string[];
+      folderId?: string | null;
+      pinned?: boolean;
+      archived?: boolean;
+    },
+  ) =>
+    request<{ note: Note }>(`/api/notes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+      token,
+    }),
+
   deleteNote: (token: string, id: string) =>
     request<void>(`/api/notes/${id}`, { method: "DELETE", token }),
+
+  listFolders: (token: string) =>
+    request<{ folders: Folder[] }>("/api/folders", { token }),
+
+  createFolder: (token: string, name: string, parentId?: string | null) =>
+    request<{ folder: Folder }>("/api/folders", {
+      method: "POST",
+      body: JSON.stringify({ name, parentId: parentId ?? null }),
+      token,
+    }),
+
+  deleteFolder: (token: string, id: string) =>
+    request<void>(`/api/folders/${id}`, { method: "DELETE", token }),
+
+  listTags: (token: string) => request<{ tags: Tag[] }>("/api/tags", { token }),
 };

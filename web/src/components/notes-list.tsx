@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+export type NoteTagVM = { tag: { id: string; name: string } };
 export type NoteVM = {
   id: string;
   title: string;
@@ -13,10 +14,8 @@ export type NoteVM = {
   createdAt: string;
   updatedAt: string;
   folder: { id: string; name: string } | null;
-  tags: { tag: { id: string; name: string } }[];
+  tags: NoteTagVM[];
 };
-
-type Folder = { id: string; name: string };
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -36,36 +35,24 @@ function snippet(content: string, max = 180) {
 
 export function NotesList({
   notes: initialNotes,
-  folders,
+  defaultFolderId,
+  defaultTagName,
 }: {
   notes: NoteVM[];
-  folders: Folder[];
+  defaultFolderId?: string | null;
+  defaultTagName?: string | null;
 }) {
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   const [query, setQuery] = useState("");
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
-  const [folderFilter, setFolderFilter] = useState<string | null>(null);
 
-  const allTags = useMemo(() => {
-    const seen = new Map<string, number>();
-    for (const n of notes) for (const t of n.tags) seen.set(t.tag.name, (seen.get(t.tag.name) ?? 0) + 1);
-    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [notes]);
-
-  const filtered = notes.filter((n) => {
-    if (folderFilter && n.folder?.id !== folderFilter) return false;
-    if (tagFilter && !n.tags.some((t) => t.tag.name === tagFilter)) return false;
-    if (query) {
-      const q = query.toLowerCase();
-      if (
-        !n.title.toLowerCase().includes(q) &&
-        !n.content.toLowerCase().includes(q)
-      )
-        return false;
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    if (!query) return notes;
+    const q = query.toLowerCase();
+    return notes.filter(
+      (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q),
+    );
+  }, [notes, query]);
 
   async function onDelete(id: string) {
     if (!confirm("¿Borrar esta nota? Esto no se puede deshacer.")) return;
@@ -96,10 +83,13 @@ export function NotesList({
   }
 
   if (notes.length === 0) {
+    const isFiltered = Boolean(defaultFolderId || defaultTagName);
     return (
       <div className="rounded-lg border border-dashed border-[var(--border)] p-12 text-center">
         <p className="text-[var(--muted-foreground)] mb-3">
-          Aún no tienes notas. Empieza creando la primera.
+          {isFiltered
+            ? "No hay notas en esta vista."
+            : "Aún no tienes notas. Empieza creando la primera."}
         </p>
         <Link
           href="/notes/new"
@@ -113,42 +103,20 @@ export function NotesList({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="mb-4">
         <input
           type="search"
-          placeholder="Buscar…"
+          placeholder="Buscar en esta vista…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 min-w-[12rem] max-w-xs px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm"
+          className="w-full max-w-md px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm"
         />
-        {folders.length > 0 && (
-          <select
-            value={folderFilter ?? ""}
-            onChange={(e) => setFolderFilter(e.target.value || null)}
-            className="px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-          >
-            <option value="">Todas las carpetas</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </select>
-        )}
-        {allTags.length > 0 && (
-          <select
-            value={tagFilter ?? ""}
-            onChange={(e) => setTagFilter(e.target.value || null)}
-            className="px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-          >
-            <option value="">Todas las etiquetas</option>
-            {allTags.map(([name, count]) => (
-              <option key={name} value={name}>{name} ({count})</option>
-            ))}
-          </select>
-        )}
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-center text-[var(--muted-foreground)] py-8">Nada coincide con los filtros.</p>
+        <p className="text-center text-[var(--muted-foreground)] py-8">
+          Nada coincide con «{query}».
+        </p>
       ) : (
         <ul className="space-y-2">
           {filtered.map((note) => (
