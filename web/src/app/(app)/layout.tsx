@@ -5,6 +5,26 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { Prisma } from "@prisma/client";
+
+// Explicit select types so Vercel's stricter tsc + Prisma version can infer
+// the row shape reliably (the inferred return of findMany with nested
+// filtered _count is fragile across Prisma patch versions).
+const folderSelect = {
+  id: true,
+  name: true,
+  parentId: true,
+  _count: { select: { notes: { where: { archived: false } }, children: true } },
+} satisfies Prisma.FolderSelect;
+
+const tagSelect = {
+  id: true,
+  name: true,
+  _count: { select: { notes: { where: { note: { archived: false } } } } },
+} satisfies Prisma.TagSelect;
+
+type FolderRow = Prisma.FolderGetPayload<{ select: typeof folderSelect }>;
+type TagRow = Prisma.TagGetPayload<{ select: typeof tagSelect }>;
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -14,22 +34,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     prisma.folder.findMany({
       where: { userId: session.user.id },
       orderBy: [{ parentId: "asc" }, { name: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        parentId: true,
-        _count: { select: { notes: { where: { archived: false } }, children: true } },
-      },
-    }),
+      select: folderSelect,
+    }) as Promise<FolderRow[]>,
     prisma.tag.findMany({
       where: { userId: session.user.id },
       orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        _count: { select: { notes: { where: { note: { archived: false } } } } },
-      },
-    }),
+      select: tagSelect,
+    }) as Promise<TagRow[]>,
   ]);
 
   const sidebarFolders: SidebarFolder[] = folders.map((f) => ({
