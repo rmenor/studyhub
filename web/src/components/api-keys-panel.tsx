@@ -12,7 +12,7 @@ export type ApiKey = {
   createdAt: string;
 };
 
-export function ApiKeysPanel({ initialKeys }: { initialKeys: ApiKey[] }) {
+export function ApiKeysPanel({ initialKeys, apiBaseUrl }: { initialKeys: ApiKey[]; apiBaseUrl: string }) {
   const router = useRouter();
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +195,7 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: ApiKey[] }) {
           Envía la clave en el header <code className="px-1 py-0.5 rounded bg-[var(--background)] text-xs">Authorization</code>:
         </p>
         <pre className="text-xs font-mono bg-[var(--background)] border border-[var(--border)] rounded p-3 overflow-x-auto whitespace-pre">
-{`curl -X POST https://studyhub.example/api/external/notes \\
+{`curl -X POST ${apiBaseUrl}/api/external/notes \\
   -H "Authorization: Bearer shk_xxxxxxxx..." \\
   -H "Content-Type: application/json" \\
   -d '{"title":"Resumen reunión","content":"# Temas\\n- ...","tagNames":["reunion"]}'`}
